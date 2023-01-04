@@ -11,11 +11,11 @@ struct Vertex {
 glium::implement_vertex!(Vertex, position);
 
 pub fn draw_vertical(display: &mut Display, target: &mut Frame, x: f32) {
-    draw_vector(display, target, x, -1.0, x, 1.0)
+    draw_vectors(display, target, &vec![[x, -1.0], [x, 1.0]])
 }
 
 pub fn draw_horizontal(display: &mut Display, target: &mut Frame, y: f32) {
-    draw_vector(display, target, -1.0, y, 1.0, y)
+    draw_vectors(display, target, &vec![[-1.0, y], [1.0, y]])
 }
 
 pub fn draw_square(
@@ -77,7 +77,7 @@ pub fn draw_square(
         .unwrap();
 }
 
-pub fn draw_vector(display: &mut Display, target: &mut Frame, x: f32, y: f32, x1: f32, y1: f32) {
+pub fn draw_vectors(display: &mut Display, target: &mut Frame, shape: &Vec<[f32; 2]>) {
     let vertex_shader = r#"
     #version 140
     
@@ -97,13 +97,12 @@ pub fn draw_vector(display: &mut Display, target: &mut Frame, x: f32, y: f32, x1
     }
     "#;
 
-    let shape = vec![[x, y], [x1, y1]];
     let shape = shape
         .into_iter()
-        .map(|[x, y]| Vertex { position: [x, y] })
+        .map(|[x, y]| Vertex { position: [*x, *y] })
         .collect::<Vec<Vertex>>();
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-    let indices: Vec<u32> = vec![0, 1];
+    let indices: Vec<u32> = (0..shape.len()).map(|x| x as u32).collect();
     let index_buffer =
         glium::IndexBuffer::new(display, glium::index::PrimitiveType::LinesList, &indices).unwrap();
 

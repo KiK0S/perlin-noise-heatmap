@@ -33,7 +33,7 @@ fn main() {
     let mut isolines_cnt = 5;
     let mut isolines = Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
     events_loop.run(move |ev, _, control_flow| {
-        draw_background(&mut display, cnt, &function, &isolines);
+        draw_background(&mut display, cnt, &function, &mut isolines);
         function.update();
         cnt += PI / 2000.0;
 

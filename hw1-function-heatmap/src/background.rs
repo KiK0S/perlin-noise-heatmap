@@ -25,7 +25,7 @@ pub fn draw_background(
     display: &mut Display,
     _time: f32,
     function: &PerlinNoise,
-    isolines: &Isolines,
+    isolines: &mut Isolines,
 ) {
     // let red = (time as f32).sin() / 2.0 + 1.0;
     // let blue = (time as f32 + PI / 3.0).sin() / 2.0 + 1.0;

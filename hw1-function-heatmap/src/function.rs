@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::draw::draw_vector;
+use crate::draw::draw_vectors;
 use crate::grid::{Dimensions, Grid};
 use glium::Display;
 use glium::Frame;
@@ -100,13 +100,13 @@ impl PerlinNoise {
                     y * grid.dimensions.h / self.dimensions.h,
                 );
                 let angle = self.vectors[self.map_idx(x, y) as usize].angle;
-                draw_vector(
+                draw_vectors(
                     display,
                     target,
-                    p.0,
-                    p.1,
-                    p.0 + angle.cos() / 5.0,
-                    p.1 + angle.sin() / 5.0,
+                    &vec![[p.0,
+                    p.1],
+                    [p.0 + angle.cos() / 5.0,
+                    p.1 + angle.sin() / 5.0]],
                 );
             }
         }

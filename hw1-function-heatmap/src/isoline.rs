@@ -14,6 +14,7 @@ fn solve_by_interpolation(a: f32, b: f32, c: f32, x0: f32, x1: f32) -> f32 {
 
 pub struct Isolines {
     c_values: Vec<f32>,
+    vectors_cache: Vec<[f32; 2]>,
 }
 
 impl Isolines {
@@ -28,18 +29,25 @@ impl Isolines {
         for i in 1..cnt {
             c_values.push(*values.select_nth_unstable_by(i * len / cnt, cmp).1);
         }
-        Self { c_values }
+        Self {
+            c_values,
+            vectors_cache: Vec::new(),
+        }
+    }
+
+    fn draw_vector(&mut self, x0: f32, y0: f32, x1: f32, y1: f32) {
+        self.vectors_cache.push([x0, y0]);
+        self.vectors_cache.push([x1, y1]);
     }
 
     pub fn draw(
-        &self,
+        &mut self,
         display: &mut Display,
         target: &mut Frame,
         grid: &Grid,
         function: &PerlinNoise,
     ) {
-        for c in self.c_values.iter() {
-            let c = *c;
+        for c in self.c_values.clone() {
             for (x, y) in grid.iterator() {
                 let nx = x + grid.get_cell_width();
                 let ny = y + grid.get_cell_height();
@@ -51,34 +59,36 @@ impl Isolines {
                 if data[0] ^ data[1] && data[2] ^ data[0] {
                     let mx = solve_by_interpolation(values[0], values[1], c, x, nx);
                     let my = solve_by_interpolation(values[0], values[2], c, y, ny);
-                    draw_vector(display, target, mx, y, x, my);
+                    self.draw_vector(mx, y, x, my);
                 }
                 if data[0] ^ data[1] && data[1] ^ data[3] {
                     let mx = solve_by_interpolation(values[0], values[1], c, x, nx);
                     let my = solve_by_interpolation(values[1], values[3], c, y, ny);
-                    draw_vector(display, target, mx, y, nx, my);
+                    self.draw_vector(mx, y, nx, my);
                 }
                 if data[0] ^ data[2] && data[2] ^ data[3] {
                     let mx = solve_by_interpolation(values[2], values[3], c, x, nx);
                     let my = solve_by_interpolation(values[0], values[2], c, y, ny);
-                    draw_vector(display, target, x, my, mx, ny);
+                    self.draw_vector(x, my, mx, ny);
                 }
                 if data[2] ^ data[3] && data[1] ^ data[3] {
                     let mx = solve_by_interpolation(values[2], values[3], c, x, nx);
                     let my = solve_by_interpolation(values[1], values[3], c, y, ny);
-                    draw_vector(display, target, nx, my, mx, ny);
+                    self.draw_vector(nx, my, mx, ny);
                 }
                 if data[0] ^ data[1] && data[2] ^ data[3] && !(data[0] ^ data[2]) {
                     let mx1 = solve_by_interpolation(values[0], values[1], c, x, nx);
                     let mx2 = solve_by_interpolation(values[2], values[3], c, x, nx);
-                    draw_vector(display, target, mx1, y, mx2, ny);
+                    self.draw_vector(mx1, y, mx2, ny);
                 }
                 if data[0] ^ data[2] && data[1] ^ data[3] && !(data[0] ^ data[1]) {
                     let my1 = solve_by_interpolation(values[0], values[2], c, y, ny);
                     let my2 = solve_by_interpolation(values[1], values[3], c, y, ny);
-                    draw_vector(display, target, x, my1, nx, my2);
+                    self.draw_vector(x, my1, nx, my2);
                 }
             }
         }
+        draw_vectors(display, target, &self.vectors_cache);
+        self.vectors_cache.clear();
     }
 }
