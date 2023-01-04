@@ -20,7 +20,7 @@ pub struct Isolines {
 impl Isolines {
     pub fn new(grid: &Grid, function: &PerlinNoise, cnt: usize) -> Self {
         let mut values: Vec<f32> = grid
-            .iterator(false)
+            .iterator()
             .map(|p| function.get_value(p.0, p.1, grid))
             .collect();
         let len = values.len();
@@ -53,7 +53,7 @@ impl Isolines {
             .reserve(2 * ((grid.dimensions.w + 1) * (grid.dimensions.h + 1)) as usize);
 
         for c in self.c_values.clone() {
-            for (x, y) in grid.iterator(false) {
+            for (x, y) in grid.iterator() {
                 let nx = x + grid.get_cell_width();
                 let ny = y + grid.get_cell_height();
                 let values: Vec<f32> = vec![(x, y), (nx, y), (x, ny), (nx, ny)]

@@ -2,6 +2,7 @@
 #![deny(clippy::perf)]
 // #![allow(clippy::all)]
 //
+use std::f32::consts::PI;
 pub mod background;
 pub mod draw;
 pub mod function;
@@ -73,8 +74,8 @@ fn main() {
                                 // function = PerlinNoise::new(background::GRID.dimensions);
                             }
                             Some(VirtualKeyCode::Down) => {
-                                background.grid.dimensions.w /= 2;
-                                background.grid.dimensions.h /= 2;
+                                background.grid.dimensions.w -= 5;
+                                background.grid.dimensions.h -= 5;
                                 // function = PerlinNoise::new(background::GRID.dimensions);
                             }
                             Some(VirtualKeyCode::Space) => {
