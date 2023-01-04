@@ -26,8 +26,8 @@ impl Isolines {
         let len = values.len();
         let cmp = |a: &f32, b: &f32| ((*a * 1000000.0) as i32).cmp(&((*b * 1000000.0) as i32));
         let mut c_values: Vec<f32> = vec![];
-        for i in 1..cnt {
-            c_values.push(*values.select_nth_unstable_by(i * len / cnt, cmp).1);
+        for i in 1..cnt + 1 {
+            c_values.push(*values.select_nth_unstable_by(i * len / (cnt + 1), cmp).1);
         }
         Self {
             c_values,
@@ -35,18 +35,23 @@ impl Isolines {
         }
     }
 
+    pub fn increase_precision(&mut self, grid: &Grid, function: &PerlinNoise) {
+        *self = Self::new(grid, function, self.c_values.len() + 1);
+    }
+
+    pub fn decrease_precision(&mut self, grid: &Grid, function: &PerlinNoise) {
+        *self = Self::new(grid, function, self.c_values.len().max(1) - 1);
+    }
+
     fn draw_vector(&mut self, x0: f32, y0: f32, x1: f32, y1: f32) {
         self.vectors_cache.push([x0, y0]);
         self.vectors_cache.push([x1, y1]);
     }
 
-    pub fn draw(
-        &mut self,
-        display: &mut Display,
-        target: &mut Frame,
-        grid: &Grid,
-        function: &PerlinNoise,
-    ) {
+    pub fn process(&mut self, grid: &Grid, function: &PerlinNoise) {
+        self.vectors_cache
+            .reserve(2 * ((grid.dimensions.w + 1) * (grid.dimensions.h + 1)) as usize);
+
         for c in self.c_values.clone() {
             for (x, y) in grid.iterator() {
                 let nx = x + grid.get_cell_width();
@@ -56,6 +61,27 @@ impl Isolines {
                     .map(|p| function.get_value(p.0, p.1, grid))
                     .collect();
                 let data: Vec<bool> = values.iter().map(|p| *p >= c).collect();
+                if data[0] ^ data[1] && data[2] ^ data[3] && data[0] ^ data[2] {
+                    let middle_x = x + grid.get_cell_width() / 2.0;
+                    let middle_y = y + grid.get_cell_height() / 2.0;
+                    let center = function.get_value(middle_x, middle_y, grid) >= x;
+                    if center ^ data[0] {
+                        let mx = solve_by_interpolation(values[0], values[1], c, x, nx);
+                        let my = solve_by_interpolation(values[0], values[2], c, y, ny);
+                        self.draw_vector(mx, y, x, my);
+                        let mx = solve_by_interpolation(values[2], values[3], c, x, nx);
+                        let my = solve_by_interpolation(values[1], values[3], c, y, ny);
+                        self.draw_vector(nx, my, mx, ny);
+                    } else {
+                        let mx = solve_by_interpolation(values[0], values[1], c, x, nx);
+                        let my = solve_by_interpolation(values[1], values[3], c, y, ny);
+                        self.draw_vector(mx, y, nx, my);
+                        let mx = solve_by_interpolation(values[2], values[3], c, x, nx);
+                        let my = solve_by_interpolation(values[0], values[2], c, y, ny);
+                        self.draw_vector(x, my, mx, ny);        
+                    }
+                    continue;
+                }
                 if data[0] ^ data[1] && data[2] ^ data[0] {
                     let mx = solve_by_interpolation(values[0], values[1], c, x, nx);
                     let my = solve_by_interpolation(values[0], values[2], c, y, ny);
@@ -88,6 +114,11 @@ impl Isolines {
                 }
             }
         }
+    }
+}
+
+impl Draw for Isolines {
+    fn draw(&mut self, display: &mut Display, target: &mut Frame) {
         draw_vectors(display, target, &self.vectors_cache);
         self.vectors_cache.clear();
     }

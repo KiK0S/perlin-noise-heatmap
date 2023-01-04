@@ -1,4 +1,4 @@
-use glium::uniform;
+use glium::uniforms::EmptyUniforms;
 use glium::Display;
 use glium::Frame;
 use glium::Surface;
@@ -8,7 +8,18 @@ struct Vertex {
     position: [f32; 2],
 }
 
+#[derive(Copy, Clone)]
+pub struct ColoredVertex {
+    pub position: [f32; 2],
+    pub color: [f32; 3],
+}
+
 glium::implement_vertex!(Vertex, position);
+glium::implement_vertex!(ColoredVertex, position, color);
+
+pub trait Draw {
+    fn draw(&mut self, display: &mut Display, target: &mut Frame);
+}
 
 pub fn draw_vertical(display: &mut Display, target: &mut Frame, x: f32) {
     draw_vectors(display, target, &vec![[x, -1.0], [x, 1.0]])
@@ -18,19 +29,17 @@ pub fn draw_horizontal(display: &mut Display, target: &mut Frame, y: f32) {
     draw_vectors(display, target, &vec![[-1.0, y], [1.0, y]])
 }
 
-pub fn draw_square(
+pub fn draw_squares(
     display: &mut Display,
     target: &mut Frame,
-    x: f32,
-    y: f32,
-    size: f32,
-    color: (f32, f32, f32),
+    shape: Vec<ColoredVertex>,
+    indices: Vec<u32>,
 ) {
     let vertex_shader = r#"
     #version 330
     
     in vec2 position;
-    uniform vec3 color;
+    in vec3 color;
     out vec4 fragColor;
     
     void main() {
@@ -50,13 +59,7 @@ pub fn draw_square(
     }
     "#;
 
-    let shape = vec![[x, y], [x + size, y], [x + size, y + size], [x, y + size]];
-    let shape = shape
-        .into_iter()
-        .map(|[x, y]| Vertex { position: [x, y] })
-        .collect::<Vec<Vertex>>();
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
-    let indices: Vec<u32> = vec![0, 1, 2, 0, 2, 3];
     let index_buffer = glium::IndexBuffer::new(
         display,
         glium::index::PrimitiveType::TrianglesList,
@@ -71,7 +74,7 @@ pub fn draw_square(
             &vertex_buffer,
             &index_buffer,
             &program,
-            &uniform! {color: color},
+            &EmptyUniforms,
             &Default::default(),
         )
         .unwrap();

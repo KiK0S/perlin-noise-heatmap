@@ -43,7 +43,7 @@ impl PerlinNoise {
     }
 
     fn interpolate(a: f32, b: f32, x: f32) -> f32 {
-        assert!((0.0..=1.0).contains(&x));
+        // assert!((0.0..=1.0).contains(&x));
         // return (b - a) * (x) + a;
         (b - a) * (3.0 * x.powf(2.0) - 2.0 * x.powf(3.0)) + a
     }
@@ -103,10 +103,10 @@ impl PerlinNoise {
                 draw_vectors(
                     display,
                     target,
-                    &vec![[p.0,
-                    p.1],
-                    [p.0 + angle.cos() / 5.0,
-                    p.1 + angle.sin() / 5.0]],
+                    &vec![
+                        [p.0, p.1],
+                        [p.0 + angle.cos() / 5.0, p.1 + angle.sin() / 5.0],
+                    ],
                 );
             }
         }

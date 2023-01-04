@@ -9,9 +9,10 @@ pub mod function;
 pub mod grid;
 pub mod isoline;
 use crate::isoline::Isolines;
-use background::draw_background;
+use draw::Draw;
 use function::PerlinNoise;
 use glium::glutin::event::{ElementState, VirtualKeyCode, WindowEvent};
+use glium::Surface;
 
 /// Example from https://glium-doc.github.io/#/tuto-01-getting-started
 /// with some tweaks so color changes smoothly
@@ -28,18 +29,31 @@ fn main() {
     // 4. Build the Display with the given window and OpenGL context parameters and register the
     //    window with the events_loop.
     let mut display = glium::Display::new(wb, cb, &events_loop).unwrap();
-    let mut cnt = 0.0;
+    let mut background = background::BACKGROUND;
     let mut function = PerlinNoise::new(background::GRID.dimensions);
-    let mut isolines_cnt = 5;
-    let mut isolines = Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
+    let mut isolines = Isolines::new(&background.grid, &function, 5);
+    let mut last_time = std::time::Instant::now();
+    let mut paused: bool = false;
     events_loop.run(move |ev, _, control_flow| {
-        draw_background(&mut display, cnt, &function, &mut isolines);
-        function.update();
-        cnt += PI / 2000.0;
+        let cur_time = std::time::Instant::now();
 
-        let next_frame_time =
-            std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
-        *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+        if (cur_time - last_time).as_millis() > 100 && !paused {
+            // redraw
+
+            let next_frame_time =
+                std::time::Instant::now() + std::time::Duration::from_millis(100);
+            *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+
+            let mut target = display.draw();
+            target.clear_color(1.0, 1.0, 1.0, 1.0);
+            function.update();
+            background.process(&function, &mut isolines);
+            background.draw(&mut display, &mut target);
+            isolines.draw(&mut display, &mut target);
+            target.finish().unwrap();
+            last_time = std::time::Instant::now();
+        }
+
         if let glium::glutin::event::Event::WindowEvent { event, .. } = ev {
             match event {
                 WindowEvent::CloseRequested => {
@@ -49,14 +63,23 @@ fn main() {
                     if let ElementState::Pressed = input.state {
                         match input.virtual_keycode {
                             Some(VirtualKeyCode::Plus) => {
-                                isolines_cnt += 1;
-                                isolines =
-                                    Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
+                                isolines.increase_precision(&background.grid, &function);
                             }
                             Some(VirtualKeyCode::Minus) => {
-                                isolines_cnt -= 1;
-                                isolines =
-                                    Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
+                                isolines.decrease_precision(&background.grid, &function);
+                            }
+                            Some(VirtualKeyCode::Up) => {
+                                background.grid.dimensions.w += 5;
+                                background.grid.dimensions.h += 5;
+                                // function = PerlinNoise::new(background::GRID.dimensions);
+                            }
+                            Some(VirtualKeyCode::Down) => {
+                                background.grid.dimensions.w -= 5;
+                                background.grid.dimensions.h -= 5;
+                                // function = PerlinNoise::new(background::GRID.dimensions);
+                            }
+                            Some(VirtualKeyCode::Space) => {
+                                paused ^= true;
                             }
                             _ => (),
                         }
