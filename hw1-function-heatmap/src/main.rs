@@ -44,7 +44,7 @@ fn main() {
             match event {
                 WindowEvent::CloseRequested => {
                     *control_flow = glium::glutin::event_loop::ControlFlow::Exit;
-                },
+                }
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let ElementState::Pressed = input.state {
                         match input.virtual_keycode {
@@ -55,12 +55,13 @@ fn main() {
                             }
                             Some(VirtualKeyCode::Minus) => {
                                 isolines_cnt -= 1;
-                                isolines = Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
+                                isolines =
+                                    Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
                             }
                             _ => (),
                         }
                     }
-                },
+                }
                 _ => (),
             }
         }

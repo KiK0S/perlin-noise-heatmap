@@ -14,43 +14,46 @@ pub struct Grid {
 impl Grid {
     pub fn new(x0: f32, x1: f32, y0: f32, y1: f32, w: i32, h: i32) -> Self {
         Self {
-            x0, x1, y0, y1, dimensions: Dimensions { w, h },
+            x0,
+            x1,
+            y0,
+            y1,
+            dimensions: Dimensions { w, h },
         }
     }
 
-    pub fn get_cell_width(&self) -> f32  {
+    pub fn get_cell_width(&self) -> f32 {
         (self.x1 - self.x0) / self.dimensions.w as f32
     }
 
-    pub fn get_cell_height(&self) -> f32  {
+    pub fn get_cell_height(&self) -> f32 {
         (self.y1 - self.y0) / self.dimensions.h as f32
     }
 
     pub fn verticals(&self) -> Vec<f32> {
-        (0..self.dimensions.w+1).map(|iter| {
-            self.x0 + iter as f32 * (self.x1 - self.x0) / self.dimensions.w as f32
-        }).collect()
+        (0..self.dimensions.w + 1)
+            .map(|iter| self.x0 + iter as f32 * (self.x1 - self.x0) / self.dimensions.w as f32)
+            .collect()
     }
 
     pub fn horizontals(&self) -> Vec<f32> {
-        (0..self.dimensions.h+1).map(|iter| {
-            self.y0 + iter as f32 * (self.y1 - self.y0) / self.dimensions.h as f32
-        }).collect()
+        (0..self.dimensions.h + 1)
+            .map(|iter| self.y0 + iter as f32 * (self.y1 - self.y0) / self.dimensions.h as f32)
+            .collect()
     }
 
     pub fn get_point(&self, x: i32, y: i32) -> (f32, f32) {
         (
             self.x0 + x as f32 * (self.x1 - self.x0) / self.dimensions.w as f32,
-            self.y0 + y as f32 * (self.y1 - self.y0) / self.dimensions.h as f32
+            self.y0 + y as f32 * (self.y1 - self.y0) / self.dimensions.h as f32,
         )
     }
-
 }
 
 impl<'a> Grid {
     pub fn iterator(&'a self) -> GridIterator {
         GridIterator { idx: 0, grid: self }
-    } 
+    }
 }
 
 pub struct GridIterator<'a> {

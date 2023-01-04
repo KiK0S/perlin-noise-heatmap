@@ -1,8 +1,7 @@
+use glium::uniform;
 use glium::Display;
 use glium::Frame;
 use glium::Surface;
-use glium::uniform;
-
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -19,7 +18,14 @@ pub fn draw_horizontal(display: &mut Display, target: &mut Frame, y: f32) {
     draw_vector(display, target, -1.0, y, 1.0, y)
 }
 
-pub fn draw_square(display: &mut Display, target: &mut Frame, x: f32, y: f32, size: f32, color: (f32, f32, f32)) {
+pub fn draw_square(
+    display: &mut Display,
+    target: &mut Frame,
+    x: f32,
+    y: f32,
+    size: f32,
+    color: (f32, f32, f32),
+) {
     let vertex_shader = r#"
     #version 330
     
@@ -45,14 +51,30 @@ pub fn draw_square(display: &mut Display, target: &mut Frame, x: f32, y: f32, si
     "#;
 
     let shape = vec![[x, y], [x + size, y], [x + size, y + size], [x, y + size]];
-    let shape = shape.into_iter().map(|[x, y]| Vertex { position: [x, y]}).collect::<Vec<Vertex>>();
+    let shape = shape
+        .into_iter()
+        .map(|[x, y]| Vertex { position: [x, y] })
+        .collect::<Vec<Vertex>>();
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
     let indices: Vec<u32> = vec![0, 1, 2, 0, 2, 3];
-    let index_buffer = glium::IndexBuffer::new(display, glium::index::PrimitiveType::TrianglesList, &indices).unwrap();
+    let index_buffer = glium::IndexBuffer::new(
+        display,
+        glium::index::PrimitiveType::TrianglesList,
+        &indices,
+    )
+    .unwrap();
 
-    let program = glium::Program::from_source(display, vertex_shader, fragment_shader, None).unwrap();
-    target.draw(&vertex_buffer, &index_buffer, &program, &uniform! {color: color},
-        &Default::default()).unwrap();
+    let program =
+        glium::Program::from_source(display, vertex_shader, fragment_shader, None).unwrap();
+    target
+        .draw(
+            &vertex_buffer,
+            &index_buffer,
+            &program,
+            &uniform! {color: color},
+            &Default::default(),
+        )
+        .unwrap();
 }
 
 pub fn draw_vector(display: &mut Display, target: &mut Frame, x: f32, y: f32, x1: f32, y1: f32) {
@@ -76,12 +98,24 @@ pub fn draw_vector(display: &mut Display, target: &mut Frame, x: f32, y: f32, x1
     "#;
 
     let shape = vec![[x, y], [x1, y1]];
-    let shape = shape.into_iter().map(|[x, y]| Vertex { position: [x, y]}).collect::<Vec<Vertex>>();
+    let shape = shape
+        .into_iter()
+        .map(|[x, y]| Vertex { position: [x, y] })
+        .collect::<Vec<Vertex>>();
     let vertex_buffer = glium::VertexBuffer::new(display, &shape).unwrap();
     let indices: Vec<u32> = vec![0, 1];
-    let index_buffer = glium::IndexBuffer::new(display, glium::index::PrimitiveType::LinesList, &indices).unwrap();
+    let index_buffer =
+        glium::IndexBuffer::new(display, glium::index::PrimitiveType::LinesList, &indices).unwrap();
 
-    let program = glium::Program::from_source(display, vertex_shader, fragment_shader, None).unwrap();
-    target.draw(&vertex_buffer, &index_buffer, &program, &glium::uniforms::EmptyUniforms,
-        &Default::default()).unwrap();
+    let program =
+        glium::Program::from_source(display, vertex_shader, fragment_shader, None).unwrap();
+    target
+        .draw(
+            &vertex_buffer,
+            &index_buffer,
+            &program,
+            &glium::uniforms::EmptyUniforms,
+            &Default::default(),
+        )
+        .unwrap();
 }
