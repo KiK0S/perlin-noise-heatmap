@@ -32,7 +32,7 @@ impl Background {
     pub fn process(&mut self, function: &PerlinNoise, isolines: &mut Isolines) {
         self.colors
             .reserve(((self.grid.dimensions.w + 1) * (self.grid.dimensions.h + 1)) as usize);
-        for (x, y) in self.grid.iterator() {
+        for (x, y) in self.grid.iterator(true) {
             let value = function.get_value(x, y, &self.grid);
             self.colors.push((value + 0.4, 0.2, 0.05));
         }
@@ -45,32 +45,28 @@ impl Draw for Background {
     fn draw(&mut self, display: &mut Display, target: &mut glium::Frame) {
         let mut shape = Vec::new();
         let mut indices = Vec::new();
-        for ((x, y), color) in self.grid.iterator().zip(self.colors.iter()) {
-            let size = self.grid.get_cell_width();
-            indices.push(0 + shape.len() as u32);
-            indices.push(1 + shape.len() as u32);
-            indices.push(2 + shape.len() as u32);
-            indices.push(0 + shape.len() as u32);
-            indices.push(2 + shape.len() as u32);
-            indices.push(3 + shape.len() as u32);
-
+        for ((x, y), color) in self.grid.iterator(true).zip(self.colors.iter()) {
             shape.push(ColoredVertex {
                 position: [x, y],
                 color: [color.0, color.1, color.2],
             });
-            shape.push(ColoredVertex {
-                position: [x + size, y],
-                color: [color.0, color.1, color.2],
-            });
-            shape.push(ColoredVertex {
-                position: [x + size, y + size],
-                color: [color.0, color.1, color.2],
-            });
-            shape.push(ColoredVertex {
-                position: [x, y + size],
-                color: [color.0, color.1, color.2],
-            });
         }
+        assert!(shape.len() == ((self.grid.dimensions.h + 1) * (self.grid.dimensions.w + 1)) as usize);
+        for idx in 0..shape.len() {
+            if idx as i32 / (self.grid.dimensions.h + 1) == self.grid.dimensions.w {
+                continue;
+            }
+            if idx as i32 % (self.grid.dimensions.h + 1) == self.grid.dimensions.h {
+                continue;
+            }
+            indices.push(idx as u32);
+            indices.push((idx + 1 + self.grid.dimensions.h as usize) as u32);
+            indices.push((idx + 2 + self.grid.dimensions.h as usize) as u32);
+            indices.push(idx as u32);
+            indices.push((idx + 2 + self.grid.dimensions.h as usize) as u32);
+            indices.push((idx + 1 as usize) as u32);
+        }
+
         draw_squares(display, target, shape, indices);
         self.colors.clear();
 
