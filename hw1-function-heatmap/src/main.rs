@@ -1,13 +1,17 @@
+#![deny(clippy::correctness)]
+#![deny(clippy::perf)]
+// #![allow(clippy::all)]
+//
 use std::f32::consts::PI;
 pub mod background;
+pub mod draw;
 pub mod function;
 pub mod grid;
-pub mod draw;
 pub mod isoline;
-use background::draw_background;
 use crate::isoline::Isolines;
+use background::draw_background;
 use function::PerlinNoise;
-use glium;
+use glium::glutin::event::{ElementState, VirtualKeyCode, WindowEvent};
 
 /// Example from https://glium-doc.github.io/#/tuto-01-getting-started
 /// with some tweaks so color changes smoothly
@@ -18,7 +22,7 @@ fn main() {
     // 2. Parameters for building the Window.
     let wb = glium::glutin::window::WindowBuilder::new()
         .with_inner_size(glium::glutin::dpi::LogicalSize::new(1000.0, 1000.0))
-        .with_title("Hello world");
+        .with_title("Perlin Noise function");
     // 3. Parameters for building the OpenGL context.
     let cb = glium::glutin::ContextBuilder::new();
     // 4. Build the Display with the given window and OpenGL context parameters and register the
@@ -26,24 +30,39 @@ fn main() {
     let mut display = glium::Display::new(wb, cb, &events_loop).unwrap();
     let mut cnt = 0.0;
     let mut function = PerlinNoise::new(background::GRID.dimensions);
-    let isolines = Isolines::new(&background::BACKGROUND, &function, 5);
+    let mut isolines_cnt = 5;
+    let mut isolines = Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
     events_loop.run(move |ev, _, control_flow| {
         draw_background(&mut display, cnt, &function, &isolines);
         function.update();
         cnt += PI / 2000.0;
-        
-        let next_frame_time = std::time::Instant::now() +
-            std::time::Duration::from_nanos(16_666_667);
+
+        let next_frame_time =
+            std::time::Instant::now() + std::time::Duration::from_nanos(16_666_667);
         *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
-        match ev {
-            glium::glutin::event::Event::WindowEvent { event, .. } => match event {
-                glium::glutin::event::WindowEvent::CloseRequested => {
+        if let glium::glutin::event::Event::WindowEvent { event, .. } = ev {
+            match event {
+                WindowEvent::CloseRequested => {
                     *control_flow = glium::glutin::event_loop::ControlFlow::Exit;
-                    return;
                 },
-                _ => return,
-            },
-            _ => (),
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if let ElementState::Pressed = input.state {
+                        match input.virtual_keycode {
+                            Some(VirtualKeyCode::Plus) => {
+                                isolines_cnt += 1;
+                                isolines =
+                                    Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
+                            }
+                            Some(VirtualKeyCode::Minus) => {
+                                isolines_cnt -= 1;
+                                isolines = Isolines::new(&background::BACKGROUND, &function, isolines_cnt);
+                            }
+                            _ => (),
+                        }
+                    }
+                },
+                _ => (),
+            }
         }
     });
 }
