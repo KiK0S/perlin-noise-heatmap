@@ -231,6 +231,10 @@ impl Isolines {
             }
         }
     }
+
+    pub fn get_precision(&self) -> usize {
+        self.c_values.len()
+    }
 }
 
 impl Draw for Isolines {

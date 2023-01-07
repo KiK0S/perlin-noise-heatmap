@@ -12,6 +12,7 @@ use draw::Draw;
 use function::PerlinNoise;
 use glium::glutin::event::{ElementState, VirtualKeyCode, WindowEvent};
 use glium::Surface;
+use grid::Dimensions;
 
 /// Example from https://glium-doc.github.io/#/tuto-01-getting-started
 /// with some tweaks so color changes smoothly
@@ -29,13 +30,7 @@ fn main() {
     //    window with the events_loop.
     let mut display = glium::Display::new(wb, cb, &events_loop).unwrap();
     let mut background = background::Background::new(
-        grid::Grid {
-            x0: -1.0,
-            x1: 1.0,
-            y0: -1.0,
-            y1: 1.0,
-            dimensions: grid::Dimensions { w: 100, h: 100 },
-        },
+        grid::Grid::new(-1.0, 1.0,-1.0,1.0, grid::Dimensions { w: 100, h: 100 }, grid::Dimensions {w: 1000, h: 1000} ),
         &display,
     );
     let mut function = PerlinNoise::new(background::GRID.dimensions);
@@ -52,7 +47,7 @@ fn main() {
             *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
             let mut target = display.draw();
-            target.clear_color(1.0, 1.0, 1.0, 1.0);
+            target.clear_color(0.0, 0.2, 0.05, 1.0);
             function.update();
             background.process(&function, &mut isolines);
             background.draw(&mut display, &mut target);
@@ -93,6 +88,17 @@ fn main() {
                             _ => (),
                         }
                     }
+                }
+                WindowEvent::Resized(size) => {
+                    let new_dim = Dimensions {
+                        w: size.width as i32,
+                        h: size.height as i32
+                    };
+                    background = background::Background::new(
+                        grid::Grid::new(-1.0, 1.0,-1.0,1.0, background.grid.dimensions, new_dim ),
+                        &display,
+                    );
+                    isolines = Isolines::new(&background.grid, &function, isolines.get_precision());
                 }
                 _ => (),
             }
