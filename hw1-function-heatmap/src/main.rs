@@ -2,7 +2,6 @@
 #![deny(clippy::perf)]
 // #![allow(clippy::all)]
 //
-use std::f32::consts::PI;
 pub mod background;
 pub mod draw;
 pub mod function;
@@ -29,7 +28,16 @@ fn main() {
     // 4. Build the Display with the given window and OpenGL context parameters and register the
     //    window with the events_loop.
     let mut display = glium::Display::new(wb, cb, &events_loop).unwrap();
-    let mut background = background::BACKGROUND;
+    let mut background = background::Background::new(
+        grid::Grid {
+            x0: -1.0,
+            x1: 1.0,
+            y0: -1.0,
+            y1: 1.0,
+            dimensions: grid::Dimensions { w: 100, h: 100 },
+        },
+        &display,
+    );
     let mut function = PerlinNoise::new(background::GRID.dimensions);
     let mut isolines = Isolines::new(&background.grid, &function, 5);
     let mut last_time = std::time::Instant::now();
@@ -40,8 +48,7 @@ fn main() {
         if (cur_time - last_time).as_millis() > 100 && !paused {
             // redraw
 
-            let next_frame_time =
-                std::time::Instant::now() + std::time::Duration::from_millis(100);
+            let next_frame_time = std::time::Instant::now() + std::time::Duration::from_millis(100);
             *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
             let mut target = display.draw();
@@ -71,11 +78,13 @@ fn main() {
                             Some(VirtualKeyCode::Up) => {
                                 background.grid.dimensions.w += 5;
                                 background.grid.dimensions.h += 5;
+                                background = background::Background::new(background.grid, &display);
                                 // function = PerlinNoise::new(background::GRID.dimensions);
                             }
                             Some(VirtualKeyCode::Down) => {
                                 background.grid.dimensions.w -= 5;
                                 background.grid.dimensions.h -= 5;
+                                background = background::Background::new(background.grid, &display);
                                 // function = PerlinNoise::new(background::GRID.dimensions);
                             }
                             Some(VirtualKeyCode::Space) => {

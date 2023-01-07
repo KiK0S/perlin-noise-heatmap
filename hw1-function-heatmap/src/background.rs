@@ -14,27 +14,83 @@ pub const GRID: Grid = Grid {
 
 pub struct Background {
     pub grid: Grid,
-    colors: Vec<(f32, f32, f32)>,
+    colors: Vec<Color>,
+    vertices: glium::VertexBuffer<Vertex>,
+    indices: glium::IndexBuffer<u32>,
+    program: glium::Program,
 }
 
-pub const BACKGROUND: Background = Background {
-    grid: Grid {
-        x0: -1.0,
-        x1: 1.0,
-        y0: -1.0,
-        y1: 1.0,
-        dimensions: Dimensions { w: 100, h: 100 },
-    },
-    colors: Vec::new(),
-};
-
 impl Background {
+    pub fn new(grid: Grid, display: &Display) -> Self {
+        let mut shape = Vec::new();
+        let mut indices = Vec::new();
+        for (x, y) in grid.iterator(true) {
+            shape.push(Vertex { position: [x, y] });
+        }
+        assert!(shape.len() == ((grid.dimensions.h + 1) * (grid.dimensions.w + 1)) as usize);
+        for idx in 0..shape.len() {
+            if idx as i32 / (grid.dimensions.h + 1) == grid.dimensions.w {
+                continue;
+            }
+            if idx as i32 % (grid.dimensions.h + 1) == grid.dimensions.h {
+                continue;
+            }
+            indices.push(idx as u32);
+            indices.push((idx + 1 + grid.dimensions.h as usize) as u32);
+            indices.push((idx + 2 + grid.dimensions.h as usize) as u32);
+            indices.push(idx as u32);
+            indices.push((idx + 2 + grid.dimensions.h as usize) as u32);
+            indices.push((idx + 1 as usize) as u32);
+        }
+        let vertex_shader = r#"
+        #version 330
+        
+        in vec2 position;
+        in vec3 color;
+        out vec4 fragColor;
+        
+        void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+            fragColor.rgb = color;
+            fragColor.a = 1;
+        }
+        "#;
+        let fragment_shader = r#"
+        #version 330
+        
+        in vec4 fragColor;
+        out vec4 color;
+        
+        void main() {
+            color = fragColor;
+        }
+        "#;
+
+        let program =
+            glium::Program::from_source(display, vertex_shader, fragment_shader, None).unwrap();
+
+        Background {
+            grid,
+            colors: Vec::new(),
+            vertices: glium::VertexBuffer::new(display, &shape).unwrap(),
+            indices: glium::IndexBuffer::new(
+                display,
+                glium::index::PrimitiveType::TrianglesList,
+                &indices,
+            )
+            .unwrap(),
+            program,
+        }
+    }
+
     pub fn process(&mut self, function: &PerlinNoise, isolines: &mut Isolines) {
         self.colors
             .reserve(((self.grid.dimensions.w + 1) * (self.grid.dimensions.h + 1)) as usize);
-        for (x, y) in self.grid.iterator() {
+        for (x, y) in self.grid.iterator(true) {
             let value = function.get_value(x, y, &self.grid);
-            self.colors.push((value + 0.4, 0.2, 0.05));
+            self.colors.push(Color {
+                color: [value + 0.4, 0.2, 0.05],
+            });
         }
 
         isolines.process(&self.grid, function);
@@ -43,43 +99,13 @@ impl Background {
 
 impl Draw for Background {
     fn draw(&mut self, display: &mut Display, target: &mut glium::Frame) {
-        let mut shape = Vec::new();
-        let mut indices = Vec::new();
-        for ((x, y), color) in self.grid.iterator().zip(self.colors.iter()) {
-            let size = self.grid.get_cell_width();
-            indices.push(0 + shape.len() as u32);
-            indices.push(1 + shape.len() as u32);
-            indices.push(2 + shape.len() as u32);
-            indices.push(0 + shape.len() as u32);
-            indices.push(2 + shape.len() as u32);
-            indices.push(3 + shape.len() as u32);
-
-            shape.push(ColoredVertex {
-                position: [x, y],
-                color: [color.0, color.1, color.2],
-            });
-            shape.push(ColoredVertex {
-                position: [x + size, y],
-                color: [color.0, color.1, color.2],
-            });
-            shape.push(ColoredVertex {
-                position: [x + size, y + size],
-                color: [color.0, color.1, color.2],
-            });
-            shape.push(ColoredVertex {
-                position: [x, y + size],
-                color: [color.0, color.1, color.2],
-            });
-        }
-        draw_squares(display, target, shape, indices);
+        draw_squares(
+            target,
+            &self.vertices,
+            &glium::VertexBuffer::new(display, &self.colors).unwrap(),
+            &self.indices,
+            &self.program,
+        );
         self.colors.clear();
-
-        // for x in GRID.verticals() {
-        //     draw_vertical(display, &mut target, x);
-        // }
-        // for y in GRID.verticals() {
-        //     draw_horizontal(display, &mut target, y);
-        // }
-        // function.debug_draw(display, &mut target, &BACKGROUND);
     }
 }

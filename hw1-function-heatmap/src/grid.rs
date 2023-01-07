@@ -1,8 +1,10 @@
+#[derive(Clone, Copy)]
 pub struct Dimensions {
     pub w: i32,
     pub h: i32,
 }
 
+#[derive(Clone, Copy)]
 pub struct Grid {
     pub x0: f32,
     pub x1: f32,
@@ -32,45 +34,67 @@ impl Grid {
 
     pub fn verticals(&self) -> Vec<f32> {
         (0..self.dimensions.w + 1)
-            .map(|iter| self.x0 + iter as f32 * (self.x1 - self.x0) / self.dimensions.w as f32)
+            .map(|iter| self.x0 + iter as f32 * self.get_cell_width())
             .collect()
     }
 
     pub fn horizontals(&self) -> Vec<f32> {
         (0..self.dimensions.h + 1)
-            .map(|iter| self.y0 + iter as f32 * (self.y1 - self.y0) / self.dimensions.h as f32)
+            .map(|iter| self.y0 + iter as f32 * self.get_cell_height())
             .collect()
     }
 
     pub fn get_point(&self, x: i32, y: i32) -> (f32, f32) {
         (
-            self.x0 + x as f32 * (self.x1 - self.x0) / self.dimensions.w as f32,
-            self.y0 + y as f32 * (self.y1 - self.y0) / self.dimensions.h as f32,
+            self.x0 + x as f32 * self.get_cell_width(),
+            self.y0 + y as f32 * self.get_cell_height(),
+        )
+    }
+
+    pub fn get_point_rev(&self, x: f32, y: f32) -> (i32, i32) {
+        (
+            ((x - self.x0 + 0.001) / self.get_cell_width()) as i32,
+            ((y - self.y0 + 0.001) / self.get_cell_height()) as i32,
         )
     }
 }
 
 impl<'a> Grid {
-    pub fn iterator(&'a self) -> GridIterator {
-        GridIterator { idx: 0, grid: self }
+    pub fn iterator(&'a self, extra_bound: bool) -> GridIterator {
+        GridIterator {
+            idx: 0,
+            grid: self,
+            extra_bound,
+        }
     }
 }
 
 pub struct GridIterator<'a> {
     idx: i32,
     grid: &'a Grid,
+    extra_bound: bool,
 }
 
 impl<'a> Iterator for GridIterator<'a> {
     type Item = (f32, f32);
     fn next(&mut self) -> Option<Self::Item> {
         let t = self.idx;
-        if t == self.grid.dimensions.w * self.grid.dimensions.h {
-            return None;
+        if !self.extra_bound {
+            if t == self.grid.dimensions.w * self.grid.dimensions.h {
+                return None;
+            }
+            let x = t / self.grid.dimensions.h;
+            let y = t % self.grid.dimensions.h;
+            self.idx += 1;
+            Some(self.grid.get_point(x, y))
+        } else {
+            if t == (self.grid.dimensions.w + 1) * (self.grid.dimensions.h + 1) {
+                return None;
+            }
+            let x = t / (self.grid.dimensions.h + 1);
+            let y = t % (self.grid.dimensions.h + 1);
+            self.idx += 1;
+            Some(self.grid.get_point(x, y))
         }
-        self.idx += 1;
-        let x = t / self.grid.dimensions.h;
-        let y = t % self.grid.dimensions.h;
-        Some(self.grid.get_point(x, y))
     }
 }

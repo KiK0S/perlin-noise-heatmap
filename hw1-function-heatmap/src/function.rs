@@ -100,14 +100,14 @@ impl PerlinNoise {
                     y * grid.dimensions.h / self.dimensions.h,
                 );
                 let angle = self.vectors[self.map_idx(x, y) as usize].angle;
-                draw_vectors(
-                    display,
-                    target,
-                    &vec![
-                        [p.0, p.1],
-                        [p.0 + angle.cos() / 5.0, p.1 + angle.sin() / 5.0],
-                    ],
-                );
+                // draw_vectors(
+                //     display,
+                //     target,
+                //     &[
+                //         [p.0, p.1],
+                //         [p.0 + angle.cos() / 5.0, p.1 + angle.sin() / 5.0],
+                //     ],
+                // );
             }
         }
     }
