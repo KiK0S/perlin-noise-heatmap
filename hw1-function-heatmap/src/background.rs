@@ -40,7 +40,7 @@ impl Background {
             indices.push((idx + 2 + grid.dimensions.h as usize) as u32);
             indices.push(idx as u32);
             indices.push((idx + 2 + grid.dimensions.h as usize) as u32);
-            indices.push((idx + 1 as usize) as u32);
+            indices.push((idx + 1_usize) as u32);
         }
         let vertex_shader = r#"
         #version 330

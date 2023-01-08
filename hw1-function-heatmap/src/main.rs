@@ -1,7 +1,6 @@
 #![deny(clippy::correctness)]
 #![deny(clippy::perf)]
-// #![allow(clippy::all)]
-//
+
 pub mod background;
 pub mod draw;
 pub mod function;
@@ -14,8 +13,7 @@ use glium::glutin::event::{ElementState, VirtualKeyCode, WindowEvent};
 use glium::Surface;
 use grid::Dimensions;
 
-/// Example from https://glium-doc.github.io/#/tuto-01-getting-started
-/// with some tweaks so color changes smoothly
+/// https://glium-doc.github.io/#/tuto-01-getting-started
 
 fn main() {
     // 1. The **winit::EventsLoop** for handling events.
@@ -30,11 +28,18 @@ fn main() {
     //    window with the events_loop.
     let mut display = glium::Display::new(wb, cb, &events_loop).unwrap();
     let mut background = background::Background::new(
-        grid::Grid::new(-1.0, 1.0,-1.0,1.0, grid::Dimensions { w: 100, h: 100 }, grid::Dimensions {w: 1000, h: 1000} ),
+        grid::Grid::new(
+            -1.0,
+            1.0,
+            -1.0,
+            1.0,
+            grid::Dimensions { w: 100, h: 100 },
+            grid::Dimensions { w: 1000, h: 1000 },
+        ),
         &display,
     );
     let mut function = PerlinNoise::new(background::GRID.dimensions);
-    let mut isolines = Isolines::new(&background.grid, &function, 5);
+    let mut isolines = Isolines::new(&background.grid, &function, &display, 5);
     let mut last_time = std::time::Instant::now();
     let mut paused: bool = false;
     events_loop.run(move |ev, _, control_flow| {
@@ -65,22 +70,20 @@ fn main() {
                     if let ElementState::Pressed = input.state {
                         match input.virtual_keycode {
                             Some(VirtualKeyCode::Plus) => {
-                                isolines.increase_precision(&background.grid, &function);
+                                isolines.increase_precision(&background.grid, &function, &display);
                             }
                             Some(VirtualKeyCode::Minus) => {
-                                isolines.decrease_precision(&background.grid, &function);
+                                isolines.decrease_precision(&background.grid, &function, &display);
                             }
                             Some(VirtualKeyCode::Up) => {
                                 background.grid.dimensions.w += 5;
                                 background.grid.dimensions.h += 5;
                                 background = background::Background::new(background.grid, &display);
-                                // function = PerlinNoise::new(background::GRID.dimensions);
                             }
                             Some(VirtualKeyCode::Down) => {
                                 background.grid.dimensions.w -= 5;
                                 background.grid.dimensions.h -= 5;
                                 background = background::Background::new(background.grid, &display);
-                                // function = PerlinNoise::new(background::GRID.dimensions);
                             }
                             Some(VirtualKeyCode::Space) => {
                                 paused ^= true;
@@ -92,13 +95,18 @@ fn main() {
                 WindowEvent::Resized(size) => {
                     let new_dim = Dimensions {
                         w: size.width as i32,
-                        h: size.height as i32
+                        h: size.height as i32,
                     };
                     background = background::Background::new(
-                        grid::Grid::new(-1.0, 1.0,-1.0,1.0, background.grid.dimensions, new_dim ),
+                        grid::Grid::new(-1.0, 1.0, -1.0, 1.0, background.grid.dimensions, new_dim),
                         &display,
                     );
-                    isolines = Isolines::new(&background.grid, &function, isolines.get_precision());
+                    isolines = Isolines::new(
+                        &background.grid,
+                        &function,
+                        &display,
+                        isolines.get_precision(),
+                    );
                 }
                 _ => (),
             }

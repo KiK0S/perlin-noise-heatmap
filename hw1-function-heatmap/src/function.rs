@@ -1,9 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::draw::draw_vectors;
 use crate::grid::{Dimensions, Grid};
-use glium::Display;
-use glium::Frame;
 use rand::Rng;
 
 #[derive(Debug)]
@@ -17,13 +14,15 @@ pub struct PerlinNoise {
     dimensions: Dimensions,
 }
 
+const EPS: f32 = 1e-5;
+
 impl PerlinNoise {
     pub fn new(dimensions: Dimensions) -> Self {
         let mut vectors = Vec::new();
         for _ in 0..(dimensions.w + 1) * (dimensions.h + 1) {
             vectors.push(RotatingVector {
                 angle: rand::thread_rng().gen_range(0.0..2.0 * PI),
-                rotation_speed: 0.1,
+                rotation_speed: rand::thread_rng().gen_range(0.0..0.2),
             });
         }
         Self {
@@ -43,7 +42,6 @@ impl PerlinNoise {
     }
 
     fn interpolate(a: f32, b: f32, x: f32) -> f32 {
-        // assert!((0.0..=1.0).contains(&x));
         // return (b - a) * (x) + a;
         (b - a) * (3.0 * x.powf(2.0) - 2.0 * x.powf(3.0)) + a
     }
@@ -63,8 +61,8 @@ impl PerlinNoise {
     }
 
     pub fn get_value(&self, x: f32, y: f32, grid: &Grid) -> f32 {
-        let xl = ((x - grid.x0 - 0.0001) / ((grid.x1 - grid.x0) / self.dimensions.w as f32)) as i32;
-        let yl = ((y - grid.y0 - 0.0001) / ((grid.y1 - grid.y0) / self.dimensions.h as f32)) as i32;
+        let xl = ((x - grid.x0 - EPS) / ((grid.x1 - grid.x0) / self.dimensions.w as f32)) as i32;
+        let yl = ((y - grid.y0 - EPS) / ((grid.y1 - grid.y0) / self.dimensions.h as f32)) as i32;
         let mut deltas = vec![];
         for coords in [(xl, yl), (xl + 1, yl), (xl, yl + 1), (xl + 1, yl + 1)] {
             let vector = &self.vectors[self.map_idx(coords.0, coords.1) as usize];
@@ -90,25 +88,5 @@ impl PerlinNoise {
             Self::interpolate(deltas[2], deltas[3], dx),
             dy,
         )
-    }
-
-    pub fn debug_draw(&self, display: &mut Display, target: &mut Frame, grid: &Grid) {
-        for x in 0..self.dimensions.w + 1 {
-            for y in 0..self.dimensions.h + 1 {
-                let p = grid.get_point(
-                    x * grid.dimensions.w / self.dimensions.w,
-                    y * grid.dimensions.h / self.dimensions.h,
-                );
-                let angle = self.vectors[self.map_idx(x, y) as usize].angle;
-                // draw_vectors(
-                //     display,
-                //     target,
-                //     &[
-                //         [p.0, p.1],
-                //         [p.0 + angle.cos() / 5.0, p.1 + angle.sin() / 5.0],
-                //     ],
-                // );
-            }
-        }
     }
 }

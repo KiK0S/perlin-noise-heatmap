@@ -13,21 +13,30 @@ pub struct Grid {
     pub dimensions: Dimensions,
 }
 
+const EPS: f32 = 1e-5;
+
 impl Grid {
-    pub fn new(mut x0: f32, mut x1: f32, mut y0: f32, mut y1: f32, dimensions: Dimensions, window: Dimensions) -> Self {
+    pub fn new(
+        mut x0: f32,
+        mut x1: f32,
+        mut y0: f32,
+        mut y1: f32,
+        dimensions: Dimensions,
+        window: Dimensions,
+    ) -> Self {
         let ratio = (y1 - y0) / (x1 - x0);
         let window_ratio = (window.h as f32) / (window.w as f32);
 
         if ratio > window_ratio {
             // image is too high
-            x0 = -window_ratio/ratio;
-            x1 = window_ratio/ratio;
+            x0 = -window_ratio / ratio;
+            x1 = window_ratio / ratio;
         }
         if ratio < window_ratio {
             // image is too wide
-            y0 = -1.0/window_ratio*ratio;
-            y1 = 1.0/window_ratio*ratio;
-        }   
+            y0 = -1.0 / window_ratio * ratio;
+            y1 = 1.0 / window_ratio * ratio;
+        }
         Self {
             x0,
             x1,
@@ -66,8 +75,8 @@ impl Grid {
 
     pub fn get_point_rev(&self, x: f32, y: f32) -> (i32, i32) {
         (
-            ((x - self.x0 + 0.001) / self.get_cell_width()) as i32,
-            ((y - self.y0 + 0.001) / self.get_cell_height()) as i32,
+            ((x - self.x0 + EPS) / self.get_cell_width()) as i32,
+            ((y - self.y0 + EPS) / self.get_cell_height()) as i32,
         )
     }
 }
